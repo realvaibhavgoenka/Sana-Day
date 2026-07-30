@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FloatingLilies } from './components/FloatingLilies';
 import { FloatingHearts } from './components/FloatingHearts';
@@ -7,20 +7,14 @@ import { BatteryScratchCards } from './components/BatteryScratchCards';
 import { ReelEditSection } from './components/ReelEditSection';
 import { LoveLetter } from './components/LoveLetter';
 import { DateScheduler } from './components/DateScheduler';
-import { CustomizeModal } from './components/CustomizeModal';
 import { BackgroundMusic } from './components/BackgroundMusic';
 import { AppConfig } from './types';
 import { getAppConfig } from './utils/storage';
 import { SingleLilySVG } from './components/LilyFlowerSVG';
 
 export default function App() {
-  const [config, setConfig] = useState<AppConfig>(getAppConfig());
+  const [config] = useState<AppConfig>(getAppConfig());
   const [activeStep, setActiveStep] = useState<number>(1);
-
-  // Reload config when updated from CustomizeModal
-  const handleUpdateConfig = (newConfig: AppConfig) => {
-    setConfig(newConfig);
-  };
 
   const nextStep = () => {
     if (activeStep < 5) {
@@ -108,12 +102,9 @@ export default function App() {
       {/* Footer Branding & Watermark */}
       <footer className="py-6 text-center text-xs text-[#C2185B]/70 font-serif tracking-widest uppercase relative z-10 flex items-center justify-center gap-2">
         <SingleLilySVG color="pink" size={20} />
-        <span>Lily Blooms For My {config.girlfriendName} • Happy Girlfriend Day</span>
+        <span>Lily Blooms For My {config.girlfriendName || 'Sana'} • Happy Girlfriend Day</span>
         <SingleLilySVG color="blue" size={20} />
       </footer>
-
-      {/* Content Customizer Modal (Photos, Letter, Names) */}
-      <CustomizeModal config={config} onUpdateConfig={handleUpdateConfig} />
     </div>
   );
 }

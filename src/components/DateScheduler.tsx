@@ -18,6 +18,8 @@ import {
   Cake,
   Edit3,
   UserCheck,
+  FileSpreadsheet,
+  Table,
 } from 'lucide-react';
 import { AppConfig, DatePlanResponse } from '../types';
 import { getDateResponse, saveDateResponse } from '../utils/storage';
@@ -28,6 +30,7 @@ import {
   getGoogleCalendarWebLink,
   CalendarEventParams,
 } from '../utils/googleCalendar';
+import { recordDateToGoogleSheet } from '../utils/googleSheets';
 
 interface Props {
   config: AppConfig;
@@ -59,11 +62,17 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
   const [yesScale, setYesScale] = useState<number>(1);
   const [buttonPosOffset, setButtonPosOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Google Calendar API states
+  // Google Calendar states
   const [isCalendarLoading, setIsCalendarLoading] = useState<boolean>(false);
   const [calendarAdded, setCalendarAdded] = useState<boolean>(false);
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [calendarEventLink, setCalendarEventLink] = useState<string | null>(null);
+
+  // Google Sheets integration states
+  const [isSheetsLoading, setIsSheetsLoading] = useState<boolean>(false);
+  const [sheetsRecorded, setSheetsRecorded] = useState<boolean>(false);
+  const [sheetsUrl, setSheetsUrl] = useState<string | null>(null);
+  const [sheetsError, setSheetsError] = useState<string | null>(null);
 
   useEffect(() => {
     const existing = getDateResponse();
@@ -96,31 +105,12 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
         });
       }
 
-      // Initial center explosion burst
-      fire(0.25, {
-        spread: 30,
-        startVelocity: 60,
-      });
-      fire(0.2, {
-        spread: 60,
-      });
-      fire(0.35, {
-        spread: 100,
-        decay: 0.91,
-        scalar: 0.8,
-      });
-      fire(0.1, {
-        spread: 120,
-        startVelocity: 25,
-        decay: 0.92,
-        scalar: 1.2,
-      });
-      fire(0.1, {
-        spread: 120,
-        startVelocity: 45,
-      });
+      fire(0.25, { spread: 30, startVelocity: 60 });
+      fire(0.2, { spread: 60 });
+      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+      fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      fire(0.1, { spread: 120, startVelocity: 45 });
 
-      // Side confetti cannons burst after 250ms for maximum festive impact
       setTimeout(() => {
         confetti({
           particleCount: 85,
@@ -137,30 +127,17 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
           colors: ['#F06292', '#D81B60', '#64B5F6', '#FCE4EC'],
         });
       }, 250);
-
-      // Final celebratory sparkle wave after 500ms
-      setTimeout(() => {
-        confetti({
-          particleCount: 60,
-          spread: 100,
-          origin: { y: 0.4 },
-          colors: ['#FFD54F', '#FFFFFF', '#F06292'],
-          scalar: 1.1,
-        });
-      }, 500);
     } catch (e) {
       console.log('Confetti triggered', e);
     }
   };
 
-  // Handle when she hovers or clicks the playful "No" button
   const handleNoInteraction = () => {
     setNoButtonCount((prev) => prev + 1);
     setYesScale((prev) => Math.min(prev + 0.12, 1.6));
 
-    // Shift button position slightly sideways/downwards away from YES button so it NEVER overlaps or goes under
     const randomX = (Math.random() - 0.5) * 80;
-    const randomY = Math.random() * 30; // Only move downwards or stay level, never up into the YES button
+    const randomY = Math.random() * 30;
     setButtonPosOffset({ x: randomX, y: randomY });
   };
 
@@ -183,9 +160,9 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
     fireCelebrateConfetti();
   };
 
-  // Google Calendar Integration
+  // Google Calendar Event Params
   const eventParams: CalendarEventParams = {
-    title: `First Date with ${config.boyfriendName} 💖`,
+    title: `First Date with ${config.boyfriendName || 'Vaibhav'} 💖`,
     description: `Our Special First Date! 💕\n\nSpecial Request / Note: "${specialNote || 'Can\'t wait for our date!'}"`,
     location: 'Our Special Date Spot 🌸',
     startDateStr: date || '2026-08-01',
@@ -195,22 +172,52 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
 
   const webCalendarLink = getGoogleCalendarWebLink(eventParams);
 
-  const handleSyncToGoogleCalendar = async () => {
+  // Sync Calendar & Record to Google Sheet
+  const handleSyncCalendarAndSheets = async () => {
     setIsCalendarLoading(true);
+    setIsSheetsLoading(true);
     setCalendarError(null);
+    setSheetsError(null);
+
     try {
       const { accessToken } = await signInWithGoogleCalendar();
-      const createdEvent = await addEventToGoogleCalendarApi(accessToken, eventParams);
-      setCalendarAdded(true);
-      if (createdEvent.htmlLink) {
-        setCalendarEventLink(createdEvent.htmlLink);
+
+      // 1. Add to Google Calendar
+      try {
+        const createdEvent = await addEventToGoogleCalendarApi(accessToken, eventParams);
+        setCalendarAdded(true);
+        if (createdEvent.htmlLink) {
+          setCalendarEventLink(createdEvent.htmlLink);
+        }
+      } catch (cErr: any) {
+        console.error('Calendar error:', cErr);
+        setCalendarError(cErr.message || 'Could not sync event to Google Calendar.');
       }
+
+      // 2. Record to Google Sheets
+      try {
+        const sheetResult = await recordDateToGoogleSheet(accessToken, {
+          date: date || 'Selected Date',
+          time: time || '07:00 PM',
+          specialNote: specialNote || '',
+          submittedAt: new Date().toLocaleString(),
+          girlfriendName: config.girlfriendName || 'Sana',
+          boyfriendName: config.boyfriendName || 'Vaibhav',
+        });
+        setSheetsRecorded(true);
+        setSheetsUrl(sheetResult.spreadsheetUrl);
+      } catch (sErr: any) {
+        console.error('Sheets error:', sErr);
+        setSheetsError(sErr.message || 'Could not record to Google Sheets.');
+      }
+
       fireCelebrateConfetti();
     } catch (err: any) {
-      console.error('Calendar error:', err);
-      setCalendarError(err.message || 'Could not sync to Google Calendar. You can use the direct link below!');
+      console.error('Google Sign In Error:', err);
+      setCalendarError('Sign in failed. Please try again!');
     } finally {
       setIsCalendarLoading(false);
+      setIsSheetsLoading(false);
     }
   };
 
@@ -246,11 +253,11 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
             Sana, Will You Go On A First Date With Me? 💖
           </h2>
           <p className="text-xs md:text-sm text-[#744F4F] font-medium mt-1">
-            Pick your preferred date & time. You can also sync it directly to Google Calendar!
+            Pick your preferred date & time. It gets saved & recorded directly on Google Sheets!
           </p>
         </div>
 
-        {/* SHOW CONFIRMATION & GOOGLE CALENDAR VOUCHER IF SAVED & NOT EDITING */}
+        {/* SHOW CONFIRMATION & GOOGLE CALENDAR / SHEETS VOUCHER IF SAVED & NOT EDITING */}
         {savedPlan && !isEditing ? (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -263,7 +270,7 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
             </div>
 
             <h3 className="font-serif italic text-2xl md:text-3xl font-bold text-[#D81B60]">
-              It's A Date, {config.girlfriendName}! 🥂✨
+              It's A Date, {config.girlfriendName || 'Sana'}! 🥂✨
             </h3>
             <p className="text-xs text-[#F06292] font-medium mt-1">
               Confirmed on {savedPlan.submittedAt}
@@ -293,74 +300,91 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
 
               {savedPlan.specialNote && (
                 <div className="sm:col-span-2 pt-3 border-t border-[#FCE4EC]">
-                  <p className="text-[11px] font-bold text-[#AD1457] uppercase tracking-wider">Sana's Note for Vaibhav</p>
+                  <p className="text-[11px] font-bold text-[#AD1457] uppercase tracking-wider">Sana's Request / Favorite Song</p>
                   <p className="text-sm italic font-serif text-[#744F4F] mt-0.5">"{savedPlan.specialNote}"</p>
                 </div>
               )}
             </div>
 
-            {/* Google Calendar Section */}
+            {/* Google Sheets & Google Calendar Sync Box */}
             <div className="mt-6 p-6 rounded-3xl bg-gradient-to-r from-[#FFF9FB] to-[#FDF0F3] border-2 border-[#FCE4EC] text-center">
               <div className="flex items-center justify-center gap-2 text-[#D81B60] font-serif italic font-bold text-lg mb-1">
-                <CalendarPlus className="w-5 h-5 text-[#F06292]" />
-                <span>Schedule On Google Calendar 📅</span>
+                <Table className="w-5 h-5 text-[#107C41]" />
+                <span>Google Sheets & Calendar Recording 📊</span>
               </div>
               <p className="text-xs text-[#744F4F] font-medium mb-4 max-w-md mx-auto">
-                Add our date directly to your Google Calendar so you get automatic reminders!
+                Record your selected date and time into Google Sheets & Google Calendar with one tap!
               </p>
 
-              {calendarAdded ? (
-                <div className="p-4 rounded-2xl bg-[#E3F2FD] border border-[#64B5F6]/30 text-[#64B5F6] text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-[#64B5F6]" />
-                    <span>Added to your Google Calendar!</span>
-                  </div>
+              {/* Status indicator if recorded */}
+              {sheetsRecorded && (
+                <div className="mb-4 p-3 rounded-2xl bg-[#E8F5E9] border border-[#A5D6A7] text-[#2E7D32] text-xs font-bold flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#2E7D32]" />
+                  <span>Successfully Recorded in Google Sheets!</span>
+                  {sheetsUrl && (
+                    <a
+                      href={sheetsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[#D81B60] underline ml-1"
+                    >
+                      View Sheet <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {calendarAdded && (
+                <div className="mb-4 p-3 rounded-2xl bg-[#E3F2FD] border border-[#90CAF9] text-[#1565C0] text-xs font-bold flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#1565C0]" />
+                  <span>Added to Google Calendar!</span>
                   {calendarEventLink && (
                     <a
                       href={calendarEventLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 underline text-[#D81B60] hover:text-[#AD1457]"
+                      className="inline-flex items-center gap-1 text-[#D81B60] underline ml-1"
                     >
                       View Event <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
                 </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={handleSyncToGoogleCalendar}
-                    disabled={isCalendarLoading}
-                    className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#D81B60] hover:bg-[#AD1457] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                  >
-                    {isCalendarLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Syncing Calendar...</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="w-4 h-4" />
-                        <span>Sign In & Auto-Add To Google Calendar</span>
-                      </>
-                    )}
-                  </button>
-
-                  <a
-                    href={webCalendarLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-6 py-3 rounded-full bg-white hover:bg-[#FDF0F3] text-[#D81B60] border-2 border-[#FCE4EC] text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <ExternalLink className="w-4 h-4 text-[#F06292]" />
-                    <span>Open One-Click Calendar Link</span>
-                  </a>
-                </div>
               )}
 
-              {calendarError && (
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={handleSyncCalendarAndSheets}
+                  disabled={isCalendarLoading || isSheetsLoading}
+                  className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#107C41] hover:bg-[#0E6C38] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isCalendarLoading || isSheetsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Syncing Google Sheets & Calendar...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>Sign In & Record On Google Sheets</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={webCalendarLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-6 py-3 rounded-full bg-white hover:bg-[#FDF0F3] text-[#D81B60] border-2 border-[#FCE4EC] text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4 text-[#F06292]" />
+                  <span>One-Click Calendar Link</span>
+                </a>
+              </div>
+
+              {(calendarError || sheetsError) && (
                 <p className="text-xs text-rose-500 font-medium mt-2">
-                  {calendarError}
+                  {calendarError || sheetsError}
                 </p>
               )}
             </div>

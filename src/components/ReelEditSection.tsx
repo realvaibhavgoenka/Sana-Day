@@ -29,6 +29,29 @@ interface Props {
   onContinue: () => void;
 }
 
+/**
+ * Parses any Google Drive URL into an embeddable preview link.
+ * e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ * -> https://drive.google.com/file/d/FILE_ID/preview
+ */
+export const getGoogleDriveEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const match1 = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1 && match1[1]) {
+    return `https://drive.google.com/file/d/${match1[1]}/preview`;
+  }
+  const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match2 && match2[1]) {
+    return `https://drive.google.com/file/d/${match2[1]}/preview`;
+  }
+  const match3 = trimmed.match(/\/uc\?id=([a-zA-Z0-9_-]+)/);
+  if (match3 && match3[1]) {
+    return `https://drive.google.com/file/d/${match3[1]}/preview`;
+  }
+  return null;
+};
+
 export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -39,32 +62,54 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
   // Active slide index for slideshow reel fallback
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
 
-  // Inline editor for reel link
+  // Link Modal State for Google Drive or Instagram Reel URL
   const [showLinkModal, setShowLinkModal] = useState<boolean>(false);
   const [inputReelUrl, setInputReelUrl] = useState<string>(config.reelUrl || '');
   const [inputVideoUrl, setInputVideoUrl] = useState<string>(config.reelVideoUrl || '');
   const [inputCaption, setInputCaption] = useState<string>(
-    config.reelCaption || 'A special reel edit made with so much love for my Sana! 💖✨'
+    config.reelCaption || 'A special Instagram reel edit made with so much love for my Sana! 💖✨'
   );
 
   const [activeReelUrl, setActiveReelUrl] = useState<string>(config.reelUrl || '');
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(config.reelVideoUrl || '');
   const [activeCaption, setActiveCaption] = useState<string>(
-    config.reelCaption || 'A special reel edit made with so much love for my Sana! 💖✨'
+    config.reelCaption || 'A special Instagram reel edit made with so much love for my Sana! 💖✨'
   );
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const memories = config.memories || [];
 
-  // Auto slide timer for memory slideshow if playing
+  // Check Google Drive Links
+  const driveEmbedUrl =
+    getGoogleDriveEmbedUrl(activeVideoUrl) ||
+    getGoogleDriveEmbedUrl(activeReelUrl);
+
+  // Helper to construct Instagram Embed URL if an Instagram reel link is provided
+  const getInstagramEmbedUrl = (url: string) => {
+    if (!url) return null;
+    try {
+      let cleanUrl = url.trim().split('?')[0];
+      if (!cleanUrl.endsWith('/')) cleanUrl += '/';
+      if (cleanUrl.includes('instagram.com/reel/') || cleanUrl.includes('instagram.com/p/')) {
+        return `${cleanUrl}embed`;
+      }
+    } catch (e) {
+      console.error('Invalid IG URL', e);
+    }
+    return null;
+  };
+
+  const instagramEmbedUrl = getInstagramEmbedUrl(activeReelUrl);
+
+  // Auto slide timer for memory slideshow if no video URL is present
   useEffect(() => {
-    if (!activeVideoUrl && isPlaying && memories.length > 0) {
+    if (!activeVideoUrl && !driveEmbedUrl && !instagramEmbedUrl && isPlaying && memories.length > 0) {
       const interval = setInterval(() => {
         setCurrentSlideIndex((prev) => (prev + 1) % memories.length);
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [isPlaying, activeVideoUrl, memories.length]);
+  }, [isPlaying, activeVideoUrl, driveEmbedUrl, instagramEmbedUrl, memories.length]);
 
   const handleLikeToggle = () => {
     if (!isLiked) {
@@ -107,23 +152,6 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
     setShowLinkModal(false);
   };
 
-  // Helper to construct Instagram Embed URL if a reel link is provided
-  const getInstagramEmbedUrl = (url: string) => {
-    if (!url) return null;
-    try {
-      let cleanUrl = url.trim().split('?')[0];
-      if (!cleanUrl.endsWith('/')) cleanUrl += '/';
-      if (cleanUrl.includes('instagram.com/reel/') || cleanUrl.includes('instagram.com/p/')) {
-        return `${cleanUrl}embed`;
-      }
-    } catch (e) {
-      console.error('Invalid IG URL', e);
-    }
-    return null;
-  };
-
-  const embedUrl = getInstagramEmbedUrl(activeReelUrl);
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative z-10 py-12">
       <motion.div
@@ -151,10 +179,10 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
             <Sparkles className="w-3.5 h-3.5 text-[#F06292]" />
           </span>
           <h2 className="text-2xl md:text-4xl font-serif italic font-bold text-[#D81B60] mt-3">
-            Our Instagram Reel Edit 🎬✨
+            Our Special Video Reel 🎬✨
           </h2>
           <p className="text-xs md:text-sm text-[#744F4F] font-medium mt-1">
-            I made this special video edit just for you! Double-tap anywhere to send love 💕
+            Double-tap anywhere on the video to send hearts 💕
           </p>
         </div>
 
@@ -170,33 +198,46 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
               </div>
             </div>
 
-            {/* Story/Reel Segment Progress Bars */}
-            <div className="absolute top-8 inset-x-3 z-30 flex gap-1 pointer-events-none">
-              {memories.map((_, idx) => (
-                <div
-                  key={idx}
-                  className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden backdrop-blur-xs"
-                >
+            {/* Progress Bars for Slideshow */}
+            {!driveEmbedUrl && !activeVideoUrl && (
+              <div className="absolute top-8 inset-x-3 z-30 flex gap-1 pointer-events-none">
+                {memories.map((_, idx) => (
                   <div
-                    className={`h-full bg-white transition-all duration-300 ${
-                      idx === currentSlideIndex
-                        ? 'w-full'
-                        : idx < currentSlideIndex
-                        ? 'w-full'
-                        : 'w-0'
-                    }`}
-                  />
-                </div>
-              ))}
-            </div>
+                    key={idx}
+                    className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden backdrop-blur-xs"
+                  >
+                    <div
+                      className={`h-full bg-white transition-all duration-300 ${
+                        idx === currentSlideIndex
+                          ? 'w-full'
+                          : idx < currentSlideIndex
+                          ? 'w-full'
+                          : 'w-0'
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* VIDEO CONTENT AREA */}
             <div
-              className="relative w-full h-full flex items-center justify-center bg-slate-950 cursor-pointer overflow-hidden"
+              className="relative w-full h-full flex items-center justify-center bg-slate-950 overflow-hidden"
               onDoubleClick={handleDoubleTapReel}
             >
-              {/* Option A: Direct MP4 Video Player */}
-              {activeVideoUrl ? (
+              {/* Option 1: Google Drive Video Embed */}
+              {driveEmbedUrl ? (
+                <div className="w-full h-full relative bg-black flex items-center justify-center">
+                  <iframe
+                    src={driveEmbedUrl}
+                    className="w-full h-full border-0"
+                    title="Google Drive Video Edit"
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+              ) : activeVideoUrl ? (
+                /* Option 2: Direct MP4 Video Player */
                 <video
                   ref={videoRef}
                   src={activeVideoUrl}
@@ -206,18 +247,18 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                   playsInline
                   className="w-full h-full object-cover"
                 />
-              ) : embedUrl ? (
-                /* Option B: Embedded Instagram Reel Frame */
+              ) : instagramEmbedUrl ? (
+                /* Option 3: Embedded Instagram Reel Frame */
                 <div className="w-full h-full flex flex-col items-center justify-center bg-black relative">
                   <iframe
-                    src={embedUrl}
+                    src={instagramEmbedUrl}
                     className="w-full h-full border-0"
                     title="Instagram Reel Edit"
                     allow="encrypted-media"
                   />
                 </div>
               ) : (
-                /* Option C: Romantic Photo Reel Slideshow Edit */
+                /* Option 4: Romantic Photo Reel Slideshow Edit */
                 <AnimatePresence mode="wait">
                   {memories[currentSlideIndex] ? (
                     <motion.div
@@ -234,7 +275,7 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
-                      {/* Dark Vignette Overlay for Instagram Look */}
+                      {/* Dark Vignette Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
 
                       {/* Photo Overlay Tag */}
@@ -261,31 +302,9 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                 )}
               </AnimatePresence>
 
-              {/* Mute/Unmute & Play/Pause Floating Control Overlay */}
-              <div className="absolute top-12 right-3 z-30 flex flex-col gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMuted(!isMuted);
-                  }}
-                  className="p-2.5 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white border border-white/20 transition-all cursor-pointer"
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsPlaying(!isPlaying);
-                  }}
-                  className="p-2.5 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white border border-white/20 transition-all cursor-pointer"
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </button>
-              </div>
-
               {/* RIGHT SIDEBAR REEL ACTIONS (Like, Comment, Share, Bookmark, Profile) */}
               <div
-                className="absolute right-3 bottom-16 z-30 flex flex-col items-center gap-5 text-white"
+                className="absolute right-3 bottom-16 z-30 flex flex-col items-center gap-5 text-white pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Like Button */}
@@ -341,21 +360,21 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                   <Bookmark className="w-6 h-6 text-white" />
                 </button>
 
-                {/* Rotating Music Disc Icon */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#D81B60] to-[#F06292] p-0.5 animate-spin-slow border-2 border-white/60 shadow-lg mt-1">
+                {/* Music Disc Icon */}
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#D81B60] to-[#F06292] p-0.5 border-2 border-white/60 shadow-lg mt-1">
                   <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
                     <Music className="w-3.5 h-3.5 text-white" />
                   </div>
                 </div>
               </div>
 
-              {/* BOTTOM REEL INFO OVERLAY (Profile, Caption, Music Ticker) */}
+              {/* BOTTOM REEL INFO OVERLAY */}
               <div
-                className="absolute bottom-3 inset-x-3 z-30 text-left text-white pr-16"
+                className="absolute bottom-3 inset-x-3 z-30 text-left text-white pr-16 pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Profile Header */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#F06292] to-[#D81B60] p-0.5">
                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#D81B60] font-bold text-xs">
                       {config.boyfriendName ? config.boyfriendName[0] : 'V'}
@@ -369,16 +388,10 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                       </span>
                     </span>
                   </div>
-                  <button
-                    onClick={triggerHeartConfetti}
-                    className="ml-1 px-2.5 py-0.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-[10px] font-bold border border-white/30 cursor-pointer"
-                  >
-                    Follow
-                  </button>
                 </div>
 
                 {/* Reel Caption */}
-                <p className="text-xs font-normal line-clamp-2 leading-snug drop-shadow-sm mb-2 text-white/95">
+                <p className="text-xs font-normal line-clamp-2 leading-snug drop-shadow-sm mb-1.5 text-white/95">
                   {activeCaption}
                 </p>
 
@@ -394,27 +407,14 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
             </div>
           </div>
 
-          {/* Quick Actions & Instagram Links below phone */}
+          {/* Quick Actions & Video Link Options below phone */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            {activeReelUrl && (
-              <a
-                href={activeReelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F56040] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Instagram className="w-4 h-4" />
-                <span>Watch Directly On Instagram</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-
             <button
               onClick={() => setShowLinkModal(true)}
               className="px-5 py-2.5 rounded-full bg-white hover:bg-[#FDF0F3] text-[#D81B60] border-2 border-[#FCE4EC] text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Edit3 className="w-4 h-4 text-[#F06292]" />
-              <span>Paste Your Reel Link / Edit Caption</span>
+              <span>Change Google Drive / Video Link</span>
             </button>
           </div>
         </div>
@@ -433,7 +433,7 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
         </div>
       </motion.div>
 
-      {/* PASTE / EDIT REEL LINK MODAL */}
+      {/* PASTE GOOGLE DRIVE / VIDEO LINK MODAL */}
       <AnimatePresence>
         {showLinkModal && (
           <motion.div
@@ -463,10 +463,10 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                 </span>
                 <div>
                   <h3 className="font-serif italic font-bold text-[#D81B60] text-lg">
-                    Add Your Instagram Reel
+                    Add Video / Google Drive Link
                   </h3>
                   <p className="text-xs text-[#744F4F]/80">
-                    Paste the reel link you made for Sana!
+                    Paste a Google Drive share link or video URL!
                   </p>
                 </div>
               </div>
@@ -474,31 +474,31 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-[#AD1457] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-                    <Instagram className="w-3.5 h-3.5 text-[#E4405F]" />
-                    Instagram Reel URL
-                  </label>
-                  <input
-                    type="url"
-                    value={inputReelUrl}
-                    onChange={(e) => setInputReelUrl(e.target.value)}
-                    placeholder="e.g. https://www.instagram.com/reel/C..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#FCE4EC] focus:outline-none focus:ring-2 focus:ring-[#F06292] text-xs bg-[#FFF9FB]"
-                  />
-                  <p className="text-[11px] text-[#744F4F]/70 mt-1">
-                    Paste the Instagram link to display your reel directly on screen!
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#AD1457] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                     <Video className="w-3.5 h-3.5 text-[#64B5F6]" />
-                    Or Direct Video File URL (MP4)
+                    Google Drive Video Share Link
                   </label>
                   <input
                     type="url"
                     value={inputVideoUrl}
                     onChange={(e) => setInputVideoUrl(e.target.value)}
-                    placeholder="https://example.com/my-reel.mp4"
+                    placeholder="https://drive.google.com/file/d/.../view"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#FCE4EC] focus:outline-none focus:ring-2 focus:ring-[#F06292] text-xs bg-[#FFF9FB]"
+                  />
+                  <p className="text-[11px] text-[#744F4F]/70 mt-1">
+                    Paste any public Google Drive video share link to embed it in the reel!
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#AD1457] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <Instagram className="w-3.5 h-3.5 text-[#E4405F]" />
+                    Or Instagram Reel Link
+                  </label>
+                  <input
+                    type="url"
+                    value={inputReelUrl}
+                    onChange={(e) => setInputReelUrl(e.target.value)}
+                    placeholder="https://www.instagram.com/reel/..."
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#FCE4EC] focus:outline-none focus:ring-2 focus:ring-[#F06292] text-xs bg-[#FFF9FB]"
                   />
                 </div>
@@ -529,7 +529,7 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                     className="px-6 py-2 rounded-full bg-[#D81B60] hover:bg-[#AD1457] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    <span>Save Reel</span>
+                    <span>Save Video</span>
                   </button>
                 </div>
               </div>
