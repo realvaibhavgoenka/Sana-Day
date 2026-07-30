@@ -1,0 +1,6 @@
+{
+  "name": "Happy Girlfriend Day - For Sana",
+  "description": "A cute, interactive Girlfriend's Day website dedicated to Sana, featuring pink and blue lilies, scratch cards, memory jar, romantic love letter, and a date planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

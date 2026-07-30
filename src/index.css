@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --color-natural-bg: #FFF9FB;
+  --color-natural-text: #744F4F;
+  --color-natural-primary: #D81B60;
+  --color-natural-pink: #F06292;
+  --color-natural-pink-dark: #AD1457;
+  --color-natural-pink-soft: #FDF0F3;
+  --color-natural-pink-border: #FCE4EC;
+  --color-natural-blue-soft: #E3F2FD;
+  --color-natural-blue: #64B5F6;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: #744F4F;
+  background-color: #FFF9FB;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+@layer utilities {
+  .bg-grid-notebook {
+    background-size: 28px 28px;
+    background-image: 
+      linear-gradient(to right, rgba(240, 98, 146, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(240, 98, 146, 0.06) 1px, transparent 1px);
+  }
+}
+
+@keyframes lilyFall {
+  0% {
+    transform: translateY(0vh) rotate(0deg) translateX(0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg) translateX(40px);
+    opacity: 0;
+  }
+}
+
+.animate-lily-fall {
+  animation: lilyFall linear infinite;
+}
+
+/* Washi Tape Accent - Soft Natural Tones */
+.washi-tape {
+  position: absolute;
+  height: 24px;
+  width: 90px;
+  background-color: rgba(252, 228, 236, 0.85);
+  border: 1px dashed rgba(240, 98, 146, 0.4);
+  transform: rotate(-4deg);
+  box-shadow: 0 1px 3px rgba(116, 79, 79, 0.08);
+}
+
+.washi-tape-blue {
+  background-color: rgba(227, 242, 253, 0.85);
+  border: 1px dashed rgba(100, 181, 246, 0.4);
+  transform: rotate(3deg);
+}
+
+/* Custom scrollbar for natural tones */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF9FB;
+}
+::-webkit-scrollbar-thumb {
+  background: #F06292;
+  border-radius: 9999px;
+}
+
