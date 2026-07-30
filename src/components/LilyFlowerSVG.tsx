@@ -45,7 +45,7 @@ export const SingleLilySVG: React.FC<LilyProps> = ({
       onMouseLeave={() => interactive && setIsHovered(false)}
       animate={
         isHovered
-          ? { scale: 1.25, rotate: [0, -3, 3, 0] }
+          ? { scale: 1.25, rotate: -3 }
           : { scale: 1, rotate: 0 }
       }
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}

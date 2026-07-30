@@ -39,6 +39,8 @@ export interface AppConfig {
   reelVideoUrl?: string;
   reelCaption?: string;
   reelAudioTrack?: string;
+  musicUrl?: string;
+  musicTitle?: string;
   memories: PhotoMemory[];
   scratchCards: ScratchCardItem[];
   dateActivities: DateOption[];

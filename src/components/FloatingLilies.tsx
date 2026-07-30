@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SingleLilySVG } from './LilyFlowerSVG';
+import { PinkTulipSVG, PinkRoseSVG } from './FlowerSVGs';
 
 interface FloatingItem {
   id: number;
-  type: 'flower' | 'petal';
+  kind: 'lily' | 'tulip' | 'rose' | 'petal';
   x: number; // horizontal percentage position (0 - 95%)
   size: number;
   duration: number;
@@ -17,19 +18,20 @@ interface FloatingItem {
 export const FloatingLilies: React.FC = () => {
   const [items, setItems] = useState<FloatingItem[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
-  const [bloomedCount, setBloomedCount] = useState<number>(0);
   const [bloomedMessage, setBloomedMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Generate a mix of full floating Lily flowers and falling lily petals across screen
-    const generated: FloatingItem[] = Array.from({ length: 24 }, (_, i) => {
-      const isFlower = i % 3 !== 0; // 2/3 are full flowers, 1/3 are petals
+    // Generate a rich mix of floating Lilies, Pink Tulips, Pink Roses, and Petals
+    const generated: FloatingItem[] = Array.from({ length: 28 }, (_, i) => {
+      const kinds: ('lily' | 'tulip' | 'rose' | 'petal')[] = ['lily', 'tulip', 'rose', 'lily', 'petal', 'rose', 'tulip'];
+      const kind = kinds[i % kinds.length];
       const colorType: 'pink' | 'blue' | 'gold' = i % 5 === 0 ? 'gold' : i % 2 === 0 ? 'pink' : 'blue';
+
       return {
         id: i,
-        type: isFlower ? 'flower' : 'petal',
+        kind,
         x: Math.random() * 92 + 3, // keep within screen bounds
-        size: isFlower ? Math.random() * 22 + 32 : Math.random() * 16 + 18,
+        size: kind === 'petal' ? Math.random() * 16 + 18 : Math.random() * 22 + 34,
         duration: Math.random() * 14 + 12,
         delay: Math.random() * 10,
         rotate: Math.random() * 360,
@@ -40,20 +42,34 @@ export const FloatingLilies: React.FC = () => {
     setItems(generated);
   }, []);
 
-  const handleHoverItem = (id: number) => {
+  const handleHoverItem = (id: number, kind: string) => {
     if (hoveredId !== id) {
       setHoveredId(id);
-      setBloomedCount((prev) => prev + 1);
 
-      // Cute toast messages when blooming flowers
-      const messages = [
-        "Lily bloomed for Sana! 🌸",
-        "Magic Pink Lily! ✨",
-        "Hover & Bloom! 🌷",
-        "Sana's Garden Blooming! 💖",
-        "Pretty Flower Bloomed! 🌼",
-      ];
-      setBloomedMessage(messages[Math.floor(Math.random() * messages.length)]);
+      const messages: Record<string, string[]> = {
+        lily: [
+          "Lily bloomed for Sana! 🌸",
+          "Magic Pink Lily! ✨",
+          "Pretty Lily Bloomed! 🌼",
+        ],
+        tulip: [
+          "Pink Tulip bloomed! 🌷",
+          "A special Tulip for Sana! 💕",
+          "Fresh Pink Tulip! ✨",
+        ],
+        rose: [
+          "Pink Rose bloomed for my love! 🌹",
+          "A sweet Rose for Sana! 💖",
+          "Romantic Rose Blooming! 🌹✨",
+        ],
+        petal: [
+          "Falling Petal of Love! 🌸",
+          "Sweet Petal Breeze! 💕",
+        ]
+      };
+
+      const options = messages[kind] || messages.lily;
+      setBloomedMessage(options[Math.floor(Math.random() * options.length)]);
 
       setTimeout(() => {
         setBloomedMessage(null);
@@ -78,7 +94,7 @@ export const FloatingLilies: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Floating Interactive Background Lilies */}
+      {/* Floating Interactive Background Flowers */}
       {items.map((item) => {
         const isHovered = hoveredId === item.id;
 
@@ -94,19 +110,19 @@ export const FloatingLilies: React.FC = () => {
               animationIterationCount: 'infinite',
               opacity: isHovered ? 1 : item.opacity,
             }}
-            onMouseEnter={() => handleHoverItem(item.id)}
+            onMouseEnter={() => handleHoverItem(item.id, item.kind)}
             onMouseLeave={() => setHoveredId(null)}
           >
-            {item.type === 'flower' ? (
-              <motion.div
-                animate={
-                  isHovered
-                    ? { scale: 1.5, rotate: item.rotate + 25 }
-                    : { scale: 1, rotate: item.rotate }
-                }
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className="cursor-pointer relative group"
-              >
+            <motion.div
+              animate={
+                isHovered
+                  ? { scale: 1.5, rotate: item.rotate + 25 }
+                  : { scale: 1, rotate: item.rotate }
+              }
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              className="cursor-pointer relative group"
+            >
+              {item.kind === 'lily' && (
                 <SingleLilySVG
                   color={item.color}
                   size={item.size}
@@ -115,29 +131,29 @@ export const FloatingLilies: React.FC = () => {
                     isHovered ? 'filter drop-shadow-[0_0_12px_rgba(240,98,146,0.8)]' : ''
                   }`}
                 />
+              )}
 
-                {/* Sparkle burst halo when hovered */}
-                {isHovered && (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1.3, opacity: 1 }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  >
-                    <span className="text-xs">✨🌸</span>
-                  </motion.div>
-                )}
-              </motion.div>
-            ) : (
-              /* Single Petal with Bloom Glow on Hover */
-              <motion.div
-                animate={
-                  isHovered
-                    ? { scale: 1.6, rotate: item.rotate + 45 }
-                    : { scale: 1, rotate: item.rotate }
-                }
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className="cursor-pointer relative"
-              >
+              {item.kind === 'tulip' && (
+                <PinkTulipSVG
+                  size={item.size}
+                  interactive={false}
+                  className={`transition-all duration-300 ${
+                    isHovered ? 'filter drop-shadow-[0_0_12px_rgba(240,98,146,0.8)]' : ''
+                  }`}
+                />
+              )}
+
+              {item.kind === 'rose' && (
+                <PinkRoseSVG
+                  size={item.size}
+                  interactive={false}
+                  className={`transition-all duration-300 ${
+                    isHovered ? 'filter drop-shadow-[0_0_12px_rgba(240,98,146,0.8)]' : ''
+                  }`}
+                />
+              )}
+
+              {item.kind === 'petal' && (
                 <svg
                   width={item.size}
                   height={item.size * 1.4}
@@ -158,8 +174,19 @@ export const FloatingLilies: React.FC = () => {
                     }
                   />
                 </svg>
-              </motion.div>
-            )}
+              )}
+
+              {/* Sparkle burst halo when hovered */}
+              {isHovered && (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1.3, opacity: 1 }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <span className="text-xs">✨🌸</span>
+                </motion.div>
+              )}
+            </motion.div>
           </div>
         );
       })}

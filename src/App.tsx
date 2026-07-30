@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FloatingLilies } from './components/FloatingLilies';
-import { NavigationHeader } from './components/NavigationHeader';
+import { FloatingHearts } from './components/FloatingHearts';
 import { EnvelopeSurprise } from './components/EnvelopeSurprise';
 import { BatteryScratchCards } from './components/BatteryScratchCards';
 import { ReelEditSection } from './components/ReelEditSection';
 import { LoveLetter } from './components/LoveLetter';
 import { DateScheduler } from './components/DateScheduler';
 import { CustomizeModal } from './components/CustomizeModal';
+import { BackgroundMusic } from './components/BackgroundMusic';
 import { AppConfig } from './types';
 import { getAppConfig } from './utils/storage';
 import { SingleLilySVG } from './components/LilyFlowerSVG';
@@ -30,21 +31,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FFF9FB] bg-grid-notebook text-[#744F4F] font-sans selection:bg-[#FCE4EC] selection:text-[#D81B60] relative overflow-x-hidden">
-      {/* Floating Pink and Blue Lily Petals Background */}
+      {/* Floating Pink and Blue Flowers Background */}
       <FloatingLilies />
 
-      {/* Top Floating Navigation Bar */}
-      <NavigationHeader
-        activeStep={activeStep}
-        onSelectStep={(s) => {
-          setActiveStep(s);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        girlfriendName={config.girlfriendName}
-      />
+      {/* Upward Drifting Floating Romantic Hearts */}
+      <FloatingHearts />
+
+      {/* Floating Background Romantic Music Control */}
+      <BackgroundMusic config={config} />
 
       {/* Main Interactive Pages Canvas */}
-      <main className="pt-16 pb-20 relative z-10">
+      <main className="pt-6 pb-20 relative z-10">
         <AnimatePresence mode="wait">
           {activeStep === 1 && (
             <motion.div

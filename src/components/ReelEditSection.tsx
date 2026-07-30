@@ -213,7 +213,6 @@ export const ReelEditSection: React.FC<Props> = ({ config, onContinue }) => {
                     src={embedUrl}
                     className="w-full h-full border-0"
                     title="Instagram Reel Edit"
-                    allowTransparency
                     allow="encrypted-media"
                   />
                 </div>

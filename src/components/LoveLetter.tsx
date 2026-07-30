@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Heart, Sparkles, ArrowRight, Quote } from 'lucide-react';
 import { AppConfig } from '../types';
 import { SingleLilySVG } from './LilyFlowerSVG';
+import { PinkRoseSVG } from './FlowerSVGs';
 
 interface Props {
   config: AppConfig;
@@ -29,9 +30,10 @@ export const LoveLetter: React.FC<Props> = ({ config, onContinue }) => {
         <div className="washi-tape -top-3 left-16" />
         <div className="washi-tape-blue -top-3 right-16" />
 
-        {/* Decorative corner flower */}
-        <div className="absolute top-4 right-4 opacity-80">
-          <SingleLilySVG color="pink" size={42} />
+        {/* Decorative corner flowers */}
+        <div className="absolute top-4 right-4 flex items-center gap-1 opacity-90">
+          <PinkRoseSVG size={38} />
+          <SingleLilySVG color="pink" size={38} />
         </div>
 
         {/* Content Container (padded from left spiral) */}

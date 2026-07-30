@@ -329,6 +329,35 @@ export const CustomizeModal: React.FC<Props> = ({ config, onUpdateConfig }) => {
                         className="w-full p-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-pink-400"
                       />
                     </div>
+
+                    <div className="pt-2 border-t border-gray-200">
+                      <label className="block text-xs font-bold text-pink-600 uppercase mb-1">
+                        Background Music Audio URL
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.musicUrl || ''}
+                        placeholder="https://actions.google.com/sounds/v1/ambiences/peaceful_piano.ogg"
+                        onChange={(e) => setFormData({ ...formData, musicUrl: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-pink-400"
+                      />
+                      <p className="text-[11px] text-gray-500 mt-1">
+                        Direct audio MP3/OGG link for background romantic music.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-pink-600 uppercase mb-1">
+                        Background Music Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.musicTitle || ''}
+                        placeholder="Romantic Piano Ambient"
+                        onChange={(e) => setFormData({ ...formData, musicTitle: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-pink-400"
+                      />
+                    </div>
                   </div>
                 )}
 

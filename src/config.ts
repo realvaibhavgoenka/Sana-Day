@@ -40,6 +40,10 @@ Forever and always, yours.`,
   reelCaption: "A special Instagram reel edit made with all my love for my Sana! 💖✨ Every second with you is my favorite memory.",
   reelAudioTrack: "Original Audio — Vaibhav x Sana 💕",
 
+  // Background Romantic Music (Direct MP3 URL)
+  musicUrl: "https://intelligent-jade-izjvhzrk.edgeone.dev",
+  musicTitle: "Tum Se Hi 💕",
+
   // Photos for Reel Slideshow / Gallery
   memories: [
     {

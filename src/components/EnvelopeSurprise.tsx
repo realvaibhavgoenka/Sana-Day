@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SingleLilySVG, LilyBouquetSVG } from './LilyFlowerSVG';
-import { Heart, Sparkles, ArrowRight, Volume2, VolumeX } from 'lucide-react';
+import { PinkRoseSVG } from './FlowerSVGs';
+import { Heart, Sparkles, ArrowRight } from 'lucide-react';
 import { AppConfig } from '../types';
 
 interface Props {
@@ -11,7 +12,6 @@ interface Props {
 
 export const EnvelopeSurprise: React.FC<Props> = ({ config, onContinue }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -36,11 +36,11 @@ export const EnvelopeSurprise: React.FC<Props> = ({ config, onContinue }) => {
             <div className="washi-tape-blue -bottom-3 -left-2 z-20" />
 
             {/* Corner Flowers */}
-            <div className="absolute top-3 left-3 opacity-80 group-hover:scale-110 transition-transform">
-              <SingleLilySVG color="pink" size={36} />
+            <div className="absolute top-3 left-3 opacity-90 group-hover:scale-110 transition-transform">
+              <PinkRoseSVG size={38} />
             </div>
-            <div className="absolute top-3 right-3 opacity-80 group-hover:scale-110 transition-transform">
-              <SingleLilySVG color="blue" size={36} />
+            <div className="absolute top-3 right-3 opacity-90 group-hover:scale-110 transition-transform">
+              <SingleLilySVG color="pink" size={36} />
             </div>
 
             {/* Envelope Visual */}

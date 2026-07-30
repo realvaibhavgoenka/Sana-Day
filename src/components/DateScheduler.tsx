@@ -82,12 +82,72 @@ export const DateScheduler: React.FC<Props> = ({ config }) => {
 
   const fireCelebrateConfetti = () => {
     try {
-      confetti({
-        particleCount: 140,
-        spread: 90,
-        origin: { y: 0.6 },
-        colors: ['#F06292', '#D81B60', '#64B5F6', '#FCE4EC', '#FFD54F'],
+      const count = 220;
+      const defaults = {
+        origin: { y: 0.65 },
+        colors: ['#F06292', '#D81B60', '#64B5F6', '#FCE4EC', '#FFD54F', '#FF1744'],
+      };
+
+      function fire(particleRatio: number, opts: confetti.Options) {
+        confetti({
+          ...defaults,
+          ...opts,
+          particleCount: Math.floor(count * particleRatio),
+        });
+      }
+
+      // Initial center explosion burst
+      fire(0.25, {
+        spread: 30,
+        startVelocity: 60,
       });
+      fire(0.2, {
+        spread: 60,
+      });
+      fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8,
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2,
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+      });
+
+      // Side confetti cannons burst after 250ms for maximum festive impact
+      setTimeout(() => {
+        confetti({
+          particleCount: 85,
+          angle: 60,
+          spread: 75,
+          origin: { x: 0, y: 0.6 },
+          colors: ['#F06292', '#D81B60', '#FF1744', '#FFD54F'],
+        });
+        confetti({
+          particleCount: 85,
+          angle: 120,
+          spread: 75,
+          origin: { x: 1, y: 0.6 },
+          colors: ['#F06292', '#D81B60', '#64B5F6', '#FCE4EC'],
+        });
+      }, 250);
+
+      // Final celebratory sparkle wave after 500ms
+      setTimeout(() => {
+        confetti({
+          particleCount: 60,
+          spread: 100,
+          origin: { y: 0.4 },
+          colors: ['#FFD54F', '#FFFFFF', '#F06292'],
+          scalar: 1.1,
+        });
+      }, 500);
     } catch (e) {
       console.log('Confetti triggered', e);
     }
